@@ -1,0 +1,12 @@
+{
+  "typescript.format.enable": false,
+  "editor.formatOnSave": false,
+  "files.trimTrailingWhitespace": true,
+  "editor.codeActionsOnSave": [
+    "source.formatDocument",
+    "source.fixAll.eslint"
+  ],
+  "cSpell.words": [
+    "portfinder"
+  ]
+}
