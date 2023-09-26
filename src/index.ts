@@ -4,6 +4,8 @@ import yargs from 'yargs'
 import {hideBin} from 'yargs/helpers'
 import {pocket} from './pocket.js'
 import process from 'process'
+import {db} from './db.js'
+import {articles} from './articles.js'
 
 async function main() {
   loadEnv()
@@ -13,7 +15,8 @@ async function main() {
   console.log(args)
   try {
     await pocket.authorize()
-    console.log(await pocket.getNext())
+    await pocket.saveAll()
+    await articles.downloadAll()
     process.exit(0)
   } catch (error) {
     console.error(error)

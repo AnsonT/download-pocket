@@ -4,48 +4,8 @@ import axios from 'axios'
 import portfinder from 'portfinder'
 import {env} from './env.js'
 import express from 'express'
-import {join, dirname} from 'node:path'
-import {fileURLToPath} from 'node:url'
-
-interface PocketGetResponse {
-  list: Record<
-    string,
-    {
-      item_id: string
-      resolved_id: string
-      given_url: string
-      given_title: string
-      favorite: string
-      status: string
-      time_added: string
-      time_updated: string
-      time_read: string
-      time_favorited: string
-      sort_id: number
-      resolved_title: string
-      resolved_url: string
-      excerpt: string
-      is_article: string
-      is_index: string
-      has_video: string
-      has_image: string
-      word_count: string
-      lang: string
-      image?: unknown
-      images?: unknown
-      listen_duration_estimate: number
-      time_to_read?: number
-      top_image_url?: string
-      authors?: unknown
-      domain_metadata?: unknown
-    }
-  >
-  error: null
-  search_meta: {
-    search_type: string
-  }
-  since: number
-}
+import {PocketGetResponse} from './types.js'
+import {db} from './db.js'
 
 type PocketConfig = {
   authorization: {
@@ -57,7 +17,7 @@ type PocketConfig = {
 }
 
 const pocketConfig = new Config<PocketConfig>(
-  path.join(process.cwd(), 'pocket.json'),
+  path.join(process.cwd(), '_data/pocket.json'),
   {since: 0}
 )
 
@@ -124,7 +84,7 @@ class Pocket {
       })
     })
   }
-  async get(since = 0, count = 10) {
+  async get(offset = 0, count = 10, since = 0) {
     const {data} = await axios.post<PocketGetResponse>(
       'https://getpocket.com/v3/get',
       {
@@ -133,17 +93,30 @@ class Pocket {
         detailType: 'complete',
         sort: 'oldest',
         since: `${since}`,
+        offset: `${offset}`,
         count: `${count}`,
       }
     )
     return data
   }
 
-  async getNext(count = 10) {
+  private async getNext(count = 10) {
     const offset = pocketConfig.get('offset') ?? 0
-    const result = await this.get(offset, count)
-    pocketConfig.set('offset', offset + count)
+    const since = pocketConfig.get('since') ?? 0
+    const result = await this.get(offset, count, since)
+    pocketConfig.set('offset', offset + Object.keys(result.list).length)
+    await db.saveBookmarks(result)
     return result
+  }
+  async saveAll() {
+    let since = pocketConfig.get('since') ?? 0
+    let count = 1
+    while (count) {
+      const resp = await this.getNext(100)
+      since = resp.since
+      count = Object.keys(resp.list).length
+    }
+    pocketConfig.set('since', since)
   }
 }
 

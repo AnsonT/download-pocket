@@ -132,3 +132,7 @@ dist
 .history
 build/
 exec/
+*.db/
+pocket.json
+articles.json
+_data/
