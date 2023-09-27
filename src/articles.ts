@@ -1,6 +1,24 @@
 import {Config} from './config.js'
 import path from 'path'
-import {db} from './db.js'
+import {ArticleEntity, db} from './db.js'
+import axios, {type AxiosError} from 'axios'
+import unfluff from 'unfluff'
+import summarize from 'summarize'
+import summary from 'node-summary'
+import _ from 'lodash'
+import {NodeHtmlMarkdown} from 'node-html-markdown'
+import {generateMarkdown} from './markdown.js'
+import {generatePDF} from './pdf.js'
+import chalk from 'chalk'
+
+async function extractSummary(title: string, content: string): Promise<string> {
+  return new Promise<string>((resolve, reject) =>
+    summary.summarize(title, content, (err: unknown, summary: string) => {
+      if (err) reject(err)
+      else resolve(summary)
+    })
+  )
+}
 
 type ArticlesConfig = {
   startPocketKey: string
@@ -13,6 +31,7 @@ const articleConfig = new Config<ArticlesConfig>(
 
 export class Articles {
   startPocketKey = articleConfig.get('startPocketKey') ?? ''
+  nhm = new NodeHtmlMarkdown({})
 
   setStartPocketKey(key: string) {
     this.startPocketKey = key
@@ -26,8 +45,60 @@ export class Articles {
       skip: this.startPocketKey ? 1 : 0,
     })
     if (result.length === 0) return []
-    for (const article of result) {
-      this.setStartPocketKey(article.id)
+    for (const r of result) {
+      if (r.doc?.resolved_url) {
+        console.log(chalk.blue(`Downloading ${r.doc?.resolved_url}`))
+        try {
+          const {data} = await axios.get(r.doc?.resolved_url)
+          const content = unfluff(data)
+          const stats = _.omit(summarize(data), [
+            'text',
+            'title',
+            'ok',
+            'image',
+          ])
+          const summary = await extractSummary(content.title, content.text)
+          const article: ArticleEntity = {
+            ok: true,
+            _id: r.id,
+            ...content,
+            ...stats,
+            pocketId: r.id,
+            raw: data,
+            summary,
+            downloadedAt: Date.now(),
+            canonicalLink: content.canonicalLink ?? r.doc.resolved_url,
+          }
+          Promise.all([
+            generateMarkdown(article),
+            generatePDF('_data/articles', article.pocketId, r.doc.resolved_url),
+          ])
+          await db.articles.put(article)
+          console.log(chalk.green(`++ Saved ${r.id} - ${r.doc?.resolved_url}`))
+        } catch (error: unknown | AxiosError) {
+          console.error(
+            chalk.red(
+              `-- Skipping ${r.doc?.resolved_url} due to error ${error}`
+            )
+          )
+          const article: Extract<ArticleEntity, {ok: false}> = {
+            ok: false,
+            _id: r.id,
+            pocketId: r.id,
+            downloadedAt: Date.now(),
+            error: '',
+            status: 0,
+          }
+          if (axios.isAxiosError(error)) {
+            article.error = error.message
+            article.status = error.response?.status ?? 0
+          } else {
+            article.error = `${error}`
+          }
+          await db.articles.put(article)
+        }
+        this.setStartPocketKey(r.id)
+      }
     }
     return result
   }
@@ -40,7 +111,7 @@ export class Articles {
       count = docs.length
       total += count
     }
-    console.log(`Downloaded ${total} articles`)
+    console.log(chalk.bgGreen(`Downloaded ${total} articles`))
   }
 }
 

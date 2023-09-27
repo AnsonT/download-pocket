@@ -71,7 +71,7 @@ class Pocket {
             resolve(this.authorization)
           })
           .catch(error => {
-            pocketConfig.set('authorization', {access_token: '', username: ''})
+            // pocketConfig.set('authorization', {access_token: '', username: ''})
             reject(error)
           })
       })
@@ -104,7 +104,9 @@ class Pocket {
     const offset = pocketConfig.get('offset') ?? 0
     const since = pocketConfig.get('since') ?? 0
     const result = await this.get(offset, count, since)
-    pocketConfig.set('offset', offset + Object.keys(result.list).length)
+    const total = offset + Object.keys(result.list).length
+    pocketConfig.set('offset', total)
+    console.log(`Saved ${total} bookmarks`)
     await db.saveBookmarks(result)
     return result
   }
@@ -117,6 +119,7 @@ class Pocket {
       count = Object.keys(resp.list).length
     }
     pocketConfig.set('since', since)
+    pocketConfig.set('offset', 0)
   }
 }
 

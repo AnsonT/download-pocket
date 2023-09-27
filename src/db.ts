@@ -1,6 +1,8 @@
 import PouchDB from 'pouchdb'
-import {PocketGetResponse} from './types'
+import {PocketGetResponse} from './types.js'
 import {monotonicFactory} from 'ulid'
+import {UnfluffData} from 'unfluff'
+import {ensureFileDir} from './utils/ensureDir.js'
 const ulid = monotonicFactory()
 
 type BookMarkEntity = PocketGetResponse['list']['0'] & {
@@ -8,32 +10,48 @@ type BookMarkEntity = PocketGetResponse['list']['0'] & {
   _rev?: string
 }
 
-type ArticleEntity = {
+interface ArticleEntityBase {
   _id?: string
   _rev?: string
   pocketId: string
-  url: string
-  title: string
-  summary: string
-  content: string
-  keywords: string[]
   downloadedAt: number
 }
+
+interface ArticleEntityOk extends ArticleEntityBase, UnfluffData {
+  ok: true
+  raw: string
+  summary: string
+  difficulty: number
+  minutes: number
+  sentiment: number
+  topics: string[]
+  words: number
+}
+interface ArticleEntityError extends ArticleEntityBase {
+  ok: false
+  error: string
+  status: number
+}
+
+export type ArticleEntity = ArticleEntityOk | ArticleEntityError
 
 export class Db {
   bookmarks: PouchDB.Database<BookMarkEntity>
   articles: PouchDB.Database<ArticleEntity>
 
   constructor() {
+    ensureFileDir('_data/bookmarks.db')
     this.bookmarks = new PouchDB('_data/bookmarks.db')
     this.articles = new PouchDB('_data/articles.db')
   }
 
   async saveBookmarks(bookmarks: PocketGetResponse) {
-    const docs = Object.values(bookmarks.list).map(bookmark => ({
-      ...bookmark,
-      _id: ulid(),
-    }))
+    const docs = Object.values(bookmarks.list).map(
+      (bookmark: PocketGetResponse['list']['']) => ({
+        ...bookmark,
+        _id: ulid(),
+      })
+    )
     await this.bookmarks.bulkDocs(docs)
   }
 

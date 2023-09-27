@@ -1,11 +1,13 @@
 import fs from 'fs'
-
+import {ensureFileDir} from './utils/ensureDir.js'
 export class Config<T> {
   data: Partial<T> = {}
   path: string
   constructor(path: string, defaults: Partial<T> = {}) {
     this.data = defaults
     this.path = path
+
+    ensureFileDir(path)
     if (!fs.existsSync(path)) {
       fs.writeFileSync(path, JSON.stringify(defaults, null, 2))
     } else {

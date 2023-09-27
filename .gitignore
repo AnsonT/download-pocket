@@ -135,4 +135,6 @@ exec/
 *.db/
 pocket.json
 articles.json
-_data/
+_data*/
+_test/
+.DS_Store
