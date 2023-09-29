@@ -3,7 +3,10 @@ import {PocketGetResponse} from './types.js'
 import {monotonicFactory} from 'ulid'
 import {UnfluffData} from 'unfluff'
 import {ensureFileDir} from './utils/ensureDir.js'
+import upsertPlugin from 'pouchdb-upsert'
 const ulid = monotonicFactory()
+
+PouchDB.plugin(upsertPlugin)
 
 type BookMarkEntity = PocketGetResponse['list']['0'] & {
   _id?: string
@@ -33,16 +36,28 @@ interface ArticleEntityError extends ArticleEntityBase {
   status: number
 }
 
+interface ArticlePendingEntity {
+  _id?: string
+  _rev?: string
+  bookmarkId: string
+  url: string
+  attemptedAt: number
+  numAttempts: number
+  lastError: string
+}
+
 export type ArticleEntity = ArticleEntityOk | ArticleEntityError
 
 export class Db {
   bookmarks: PouchDB.Database<BookMarkEntity>
   articles: PouchDB.Database<ArticleEntity>
+  pending: PouchDB.Database<ArticlePendingEntity>
 
   constructor() {
     ensureFileDir('_data/bookmarks.db')
     this.bookmarks = new PouchDB('_data/bookmarks.db')
     this.articles = new PouchDB('_data/articles.db')
+    this.pending = new PouchDB('_data/pending.db')
   }
 
   async saveBookmarks(bookmarks: PocketGetResponse) {
@@ -69,6 +84,21 @@ export class Db {
 
   async saveArticles(articles: ArticleEntity[]) {
     await this.articles.bulkDocs(articles)
+  }
+  async savePending(pending: ArticlePendingEntity) {
+    await this.pending.put(
+      {
+        _id: pending._id ?? ulid(),
+        ...pending,
+      },
+      {force: true}
+    )
+  }
+  async removePending(id: string) {
+    await this.pending.remove({
+      _id: id,
+      _rev: (await this.pending.get(id))._rev,
+    })
   }
 }
 

@@ -3,11 +3,12 @@ import {ArticleEntity} from './db.js'
 import {NodeHtmlMarkdown} from 'node-html-markdown'
 import YAML from 'yamljs'
 import {mkdir, writeFile, access, constants} from 'fs/promises'
-import fs from 'fs'
+import fs, {appendFileSync} from 'fs'
 import path from 'path'
 import axios from 'axios'
 import {urlToFilename} from './utils/urlToFilename.js'
 import chalk from 'chalk'
+import {logProcessingError} from './utils/logError.js'
 
 const nhm = new NodeHtmlMarkdown({})
 
@@ -50,18 +51,13 @@ export async function replaceMarkdownImages(
   id: string,
   md: string
 ): Promise<string> {
-  const imageFormats = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', '.bmp']
-  const imageFormatsRegex = `\\.(${imageFormats.join('|')})`
-  const imgRegex = new RegExp(
-    `!\\[([^\\]]+)\\]\\(((.+?(?:${imageFormatsRegex}))(?:\\?.*)?)\\)`,
-    'g'
-  )
-
+  const imgRegex = /!\[[^\]]*\]\(((([^)]*\.(png|jpg|gif))(\?[^)\s]*)?)[^)]*)\)/g
   const imgs = md.matchAll(imgRegex)
   let first = true
   const replacements = []
   for (const img of imgs) {
-    const imgPath = img[2]
+    const imgPath = img[1]
+    const downloadPath = img[2]
     const imgName = img[3]
     // const imgExt = img[4]
 
@@ -73,8 +69,8 @@ export async function replaceMarkdownImages(
     }
     const filename = urlToFilename(imgName)
     try {
-      const imgUrl = new URL(imgPath, url)
-      // console.log(chalk.bgBlue(`  Image: Downloading ${imgPath} ${imgUrl.toString()}`))
+      const imgUrl = new URL(downloadPath, url)
+      // console.log(chalk.bgBlue(`  Image: Downloading ${imgPath} ${imgUrl}`))
       await downloadImage(imgUrl.toString(), path.join(dir, id), filename)
       replacements.push({imgPath, filename})
     } catch (e) {
@@ -117,5 +113,6 @@ export async function generateMarkdown(article: ArticleEntity) {
     console.error(
       chalk.red(`  Markdown: Error generating markdown for ${article.pocketId}`)
     )
+    logProcessingError('md', article.pocketId, article.canonicalLink)
   }
 }

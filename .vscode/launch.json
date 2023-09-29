@@ -16,6 +16,10 @@
       "outFiles": [
         "${workspaceFolder}/build/**/*.js"
       ],
+      "args": [
+        "download",
+        "01HBC8YXBM2CYZVYRYM1G49YC4"
+      ],
       "console": "integratedTerminal"
     }
   ]

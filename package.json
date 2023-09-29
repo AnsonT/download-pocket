@@ -7,6 +7,7 @@
   "type": "module",
   "scripts": {
     "start": "npm run compile && node build/src/index.js",
+    "debug": "npm run compile && node --inspect build/src/index.js",
     "test": "npm run compile &&  jest && npm run lint",
     "lint": "gts lint",
     "clean": "gts clean",
@@ -23,6 +24,7 @@
     "@duckduckgo/autoconsent": "^1.0.8",
     "axios": "^1.5.0",
     "chalk": "^5.3.0",
+    "commander": "^11.0.0",
     "cross-fetch": "^4.0.0",
     "express": "^4.18.2",
     "lodash": "^4.17.21",
@@ -31,13 +33,13 @@
     "open": "^9.1.0",
     "portfinder": "^1.0.32",
     "pouchdb": "^8.0.1",
+    "pouchdb-upsert": "^2.2.0",
     "puppeteer": "^21.3.5",
     "summarize": "^1.5.0",
     "ts-dotenv": "^0.9.1",
     "ulid": "^2.3.0",
     "unfluff": "^3.2.0",
-    "yamljs": "^0.3.0",
-    "yargs": "^17.7.2"
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.18",
@@ -45,6 +47,7 @@
     "@types/lodash": "^4.14.199",
     "@types/node": "^14.11.2",
     "@types/pouchdb": "^6.4.0",
+    "@types/pouchdb-upsert": "^2.2.7",
     "@types/yamljs": "^0.2.32",
     "@types/yargs": "^17.0.24",
     "eslint-plugin-jsdoc": "^46.4.3",
