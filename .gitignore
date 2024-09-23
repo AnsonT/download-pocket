@@ -136,6 +136,7 @@ exec/
 pocket.json
 articles.json
 _data*/
+__data*/
 _test/
 .DS_Store
 result.pdf

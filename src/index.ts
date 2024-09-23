@@ -13,10 +13,14 @@ async function downloadById(id: string) {
 }
 
 async function downloadAll() {
+  console.log('Downloading all bookmarks')
   try {
     await pocket.authorize()
+    console.log('Authorized')
     await pocket.saveAll()
+    console.log('Saved all bookmarks')
     await articles.downloadAll()
+    console.log('Downloaded all bookmarks')
     process.exit(0)
   } catch (error) {
     console.error(error)

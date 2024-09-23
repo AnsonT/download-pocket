@@ -11,6 +11,7 @@ import {generateMarkdown} from './markdown.js'
 import {generatePDF} from './pdf.js'
 import chalk from 'chalk'
 import {logProcessingError} from './utils/logError.js'
+import {env} from './env.js'
 
 axios.defaults.timeout = 30000
 
@@ -68,7 +69,7 @@ type ArticlesConfig = {
 }
 
 const articleConfig = new Config<ArticlesConfig>(
-  path.join(process.cwd(), '_data/articles.json'),
+  path.join(/*process.cwd(),*/ env.DATA_DIR, 'articles.json'),
   {startPocketKey: ''}
 )
 
@@ -103,7 +104,11 @@ export class Articles {
       }
       await Promise.all([
         generateMarkdown(article),
-        generatePDF('_data/articles', article.pocketId, downloadUrl),
+        generatePDF(
+          path.join(env.DATA_DIR, 'articles'),
+          article.pocketId,
+          downloadUrl
+        ),
       ])
       await db.articles.upsert(pocketId, doc => {
         return {...doc, ...article}

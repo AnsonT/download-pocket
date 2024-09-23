@@ -17,7 +17,7 @@ type PocketConfig = {
 }
 
 const pocketConfig = new Config<PocketConfig>(
-  path.join(process.cwd(), '_data/pocket.json'),
+  path.join(/*process.cwd(), */ env.DATA_DIR, 'pocket.json'),
   {since: 0}
 )
 
@@ -31,6 +31,7 @@ class Pocket {
     }
     if (this.authorization.access_token) return
     const port = await portfinder.getPortPromise()
+    console.log('Authorization using port:', port)
     const {
       data: {code},
     } = await axios.post(

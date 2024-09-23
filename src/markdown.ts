@@ -9,6 +9,7 @@ import axios from 'axios'
 import {urlToFilename} from './utils/urlToFilename.js'
 import chalk from 'chalk'
 import {logProcessingError} from './utils/logError.js'
+import {env} from './env.js'
 
 const nhm = new NodeHtmlMarkdown({})
 
@@ -93,20 +94,21 @@ export async function generateMarkdown(article: ArticleEntity) {
       'text',
       'links',
     ])
+    const dataDir = env.DATA_DIR
     const md = await replaceMarkdownImages(
       article.canonicalLink,
-      '_data/articles/',
+      path.join(dataDir, 'articles/'),
       article.pocketId,
       nhm.translate(article.raw)
     )
     const content = `${YAML.stringify(frontmatter)}\n---\n${md}`
     await writeFile(
-      path.join('_data/articles', `${article.pocketId}.md`),
+      path.join(dataDir, 'articles', `${article.pocketId}.md`),
       content
     )
     console.log(
       chalk.green(
-        `   - ${path.join('_data/articles', `${article.pocketId}.md`)}`
+        `   - ${path.join(dataDir, 'articles', `${article.pocketId}.md`)}`
       )
     )
   } catch (e) {

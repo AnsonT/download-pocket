@@ -9,9 +9,14 @@ export const schema = {
     default: 'development',
   },
   POCKET_CONSUMER_KEY: String,
+  DATA_DIR: {
+    type: String,
+    optional: true,
+    default: '_data',
+  },
 }
 
-export let env: Env
+export let env: Env = load(schema)
 
 export function loadEnv(): void {
   env = load(schema)

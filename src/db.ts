@@ -4,6 +4,8 @@ import {monotonicFactory} from 'ulid'
 import {UnfluffData} from 'unfluff'
 import {ensureFileDir} from './utils/ensureDir.js'
 import upsertPlugin from 'pouchdb-upsert'
+import {env} from './env.js'
+import path from 'node:path'
 const ulid = monotonicFactory()
 
 PouchDB.plugin(upsertPlugin)
@@ -54,10 +56,11 @@ export class Db {
   pending: PouchDB.Database<ArticlePendingEntity>
 
   constructor() {
-    ensureFileDir('_data/bookmarks.db')
-    this.bookmarks = new PouchDB('_data/bookmarks.db')
-    this.articles = new PouchDB('_data/articles.db')
-    this.pending = new PouchDB('_data/pending.db')
+    const dataDir = env.DATA_DIR
+    ensureFileDir(path.join(dataDir, 'bookmarks.db'))
+    this.bookmarks = new PouchDB(path.join(dataDir, 'bookmarks.db'))
+    this.articles = new PouchDB(path.join(dataDir, 'articles.db'))
+    this.pending = new PouchDB(path.join(dataDir, 'pending.db'))
   }
 
   async saveBookmarks(bookmarks: PocketGetResponse) {
